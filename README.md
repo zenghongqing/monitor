@@ -128,7 +128,7 @@ console.error = function (origin) {
 
 * 加载图片资源GIF（非JS和CSS，会阻塞页面渲染）的方式
 优点：不存在跨域，也不会阻塞页面渲染
-缺点：上报数据量较小
+缺点：上报数据量较小，有可能会被插入到正在忙碌工作的事件循环中，从而抢占了其他高优先级的任务的资源
 ```
 var logInfo = {
     type: type,
@@ -146,6 +146,22 @@ var logInfo = {
   var img = new window.Image();
   img.src = "".concat(feeTarget, "?d=").concat(encodeURIComponent(JSON.stringify(logInfo)));
 ```
+* 使用信标beacon
+```
+var data = JSON.stringify({
+  name: 'Berwin'
+});
+navigator.sendBeacon('/haopv', data)
+```
+参数
+
+url：上报的目标地址
+data：被上报的数据
+返回值（Return Value）：sendBeacon方法被执行后返回一个布尔值，true代表用户代理成功地将信标请求加入到队列中，否则返回false。
+用户代理对通过信标发送的数据量进行限制，以确保请求被成功传递到服务端，并且对浏览器活动的影响降到最小。如果要排队的数据量超出了用户代理的限制，sendBeacon方法将返回false，返回true代表浏览器已将数据排队等待传递。然而，由于实际数据传输是异步的，所以此方法不提供任何关于数据传输是否成功的信息。
+虽然信标得到了很高的支持度，但还是无法在所有浏览器中使用，所以如果您想使用信标上报前端日志，一些特征检测是必要的。
+
+还有一个需要注意的是，通过信标发送的请求，请求方法均为POST，且不支持修改。
 上报时同时触发多个错误时，把错误进行合并上报
 ```
 /**
